@@ -15,7 +15,7 @@ namespace TaskManager.Models.TaskItem
         public TaskState State { get; set; } = 0;
         [Display(Name = "Vytvořeno")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-        [Display(Name = "Termín dokončení")]
+        [Display(Name = "Termín požadovaného dokončení (Volitelné)")]
         public DateTime? DueDate { get; set; }
 
         public List<SelectListItem> StateOptions { get; set; } = new();
