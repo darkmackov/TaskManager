@@ -1,9 +1,14 @@
-﻿namespace TaskManager.Entities.Enums
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace TaskManager.Entities.Enums
 {
-    public enum TaskState
+    public enum TaskState : short
     {
-        New,
-        Active,
-        Completed,
+        [Display(Name = "Nový")]
+        New = 0,
+        [Display(Name = "Aktivní")]
+        Active = 1,
+        [Display(Name = "Dokončený")]
+        Completed = 2,
     }
 }

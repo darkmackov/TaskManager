@@ -39,7 +39,7 @@ namespace TaskManager
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
+                pattern: "{controller=TaskItem}/{action=List}/{id?}");
 
             await app.RunAsync();
         }
