@@ -6,9 +6,11 @@
 @{
     ViewData["Title"] = "Úkoly";
 
+    // Prepare dropdown options for sorting and filtering tasks
     var taskStates = Enum.GetValues<TaskState>();
     var sortOptions = Enum.GetValues<SortBy>();
 
+    // Retrieve current filter/sort state from ViewData (set in controller)
     var currentSort = ViewData["CurrentSort"] as string;
     var currentState = ViewData["CurrentState"] as string;
 }
@@ -18,6 +20,7 @@
 <div class="card shadow-sm">
     <div class="card-header d-flex justify-content-between mb-2">
         <div>
+            <!-- Dropdown for sorting tasks by selected property -->
             <div class="btn-group">
                 <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                     Řadit podle
@@ -40,6 +43,7 @@
                     }
                 </ul>
             </div>
+            <!-- Dropdown for filtering tasks by selected property -->
             <div class="btn-group">
                 <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                     Filtrovat podle stavu
@@ -59,7 +63,6 @@
                             ? "active" 
                             : "";
                         <li>
-
                             <a asp-action="List"
                                asp-route-state="@stateString"
                                asp-route-sort="@currentSort"

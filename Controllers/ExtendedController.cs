@@ -21,7 +21,7 @@ namespace TaskManager.Controllers
         }
 
         /// <summary>
-        /// Displays a message to the user
+        /// Sets a temporary message and its type to be displayed to the user, 
         /// </summary>
         protected void SetMessage(string message, MessageType type = MessageType.Success)
         {

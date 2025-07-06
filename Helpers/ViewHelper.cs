@@ -4,6 +4,9 @@ namespace TaskManager.Helpers
 {
     public static class ViewHelper
     {
+        /// <summary>
+        /// Determines the CSS class for a badge based on the task state.
+        /// </summary>
         public static string GetBadgeClass(TaskState state)
         {
             return state switch

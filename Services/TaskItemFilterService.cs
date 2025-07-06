@@ -3,8 +3,14 @@ using TaskManager.Entities.Enums;
 
 namespace TaskManager.Services
 {
+    /// <summary>
+    /// Service for filtering and sorting TaskItems.
+    /// </summary>
     public static class TaskItemFilterService
     {
+        /// <summary>
+        /// Applies sorting to the TaskItems based on the provided sort parameter.
+        /// </summary>
         public static IQueryable<TaskItem> ApplySort(IQueryable<TaskItem> taskItems, string? sort, out string? currentSort)
         {
             // If the sort parameter is missing or invalid, default to sorting by CreatedAt (newest first).
@@ -21,6 +27,9 @@ namespace TaskManager.Services
             };
         }
 
+        /// <summary>
+        /// Applies a filter to the TaskItems based on the provided state parameter.
+        /// </summary>
         public static IQueryable<TaskItem> ApplyTaskStateFilter(IQueryable<TaskItem> taskItems, string? state, out string? currentState)
         {
             // If the state parameter is missing or invalid, default to no filtering.
