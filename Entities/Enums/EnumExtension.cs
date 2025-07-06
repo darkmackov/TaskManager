@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 
 namespace TaskManager.Entities.Enums
@@ -17,6 +18,21 @@ namespace TaskManager.Entities.Enums
                 .GetMember(item.ToString())
                 .First()
                 .GetCustomAttribute<DisplayAttribute>()?.Name ?? item.ToString();
+        }
+
+        /// <summary>
+        /// Generates a list of SelectListItem options from any enum type.
+        /// </summary>
+        public static List<SelectListItem> ToSelectListItems<T>()
+            where T : Enum
+        {
+            return Enum.GetValues(typeof(T))
+                .Cast<TaskState>()
+                .Select(item => new SelectListItem
+                {
+                    Value = ((int)item).ToString(),
+                    Text = item.GetDisplayName()
+                }).ToList();
         }
     }
 }

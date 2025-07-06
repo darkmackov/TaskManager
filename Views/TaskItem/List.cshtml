@@ -5,24 +5,84 @@
 @model IEnumerable<TaskItemViewModel>
 @{
     ViewData["Title"] = "Úkoly";
+
+    var taskStates = Enum.GetValues<TaskState>();
+    var sortOptions = Enum.GetValues<SortBy>();
+
+    var currentSort = ViewData["CurrentSort"] as string;
+    var currentState = ViewData["CurrentState"] as string;
 }
 
 <partial name="_MessageHandler" />
 
 <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-end mb-2">
+    <div class="card-header d-flex justify-content-between mb-2">
+        <div>
+            <div class="btn-group">
+                <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    Řadit podle
+                </button>
+                <ul class="dropdown-menu">
+                    @foreach (var option in sortOptions)
+                    {
+                        string sortString = option.ToString();
+                        var active = currentSort == sortString
+                        ? "active"
+                        : "";
+                        <li>
+                            <a asp-action="List"
+                               asp-route-state="@currentState"
+                               asp-route-sort="@sortString"
+                               class="dropdown-item @active">
+                                @option.GetDisplayName()
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    Filtrovat podle stavu
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a asp-action="List"
+                           asp-route-sort="@currentSort"
+                           class="dropdown-item @(string.IsNullOrEmpty(currentState) ? "active" : "")">
+                            Vše
+                        </a>
+                    </li>
+                    @foreach (var state in taskStates)
+                    {
+                        string stateString = state.ToString();
+                        var active = currentState == stateString 
+                            ? "active" 
+                            : "";
+                        <li>
+
+                            <a asp-action="List"
+                               asp-route-state="@stateString"
+                               asp-route-sort="@currentSort"
+                               class="dropdown-item @active">
+                                @state.GetDisplayName()
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
         <a class="btn btn-success" asp-controller="TaskItem" asp-action="Create">Přidat úkol</a>
     </div>
     <div class="card-body">
         @if (Model.Any())
         {
-            <table class="table table-hover align-middle mt-2">
+            <table class="table table-hover align-middle mt-2 text-center">
                 <thead>
                     <tr>
                         <th>Název</th>
                         <th>Požadovaný termín dokončení</th>
                         <th>Stav</th>
-                        <th class="text-end pe-3">Akce</th>
+                        <th>Akce</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -34,7 +94,7 @@
                             <td>
                                 <span class="badge @ViewHelper.GetBadgeClass(item.State)">@item.State.GetDisplayName()</span>
                             </td>
-                            <td class="text-end">
+                            <td>
                                 <a asp-action="Detail" asp-route-id="@item.Id" class="btn btn-primary">Detail</a>
                                 <a asp-action="Update" asp-route-id="@item.Id" class="btn btn-warning">Upravit</a>
                                 <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger">Smazat</a>

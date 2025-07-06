@@ -9,7 +9,7 @@ namespace TaskManager.Helpers
             return state switch
             {
                 TaskState.New => "bg-secondary",
-                TaskState.Active => "bg-warning text-dark",
+                TaskState.Active => "bg-primary",
                 TaskState.Completed => "bg-success",
                 _ => "bg-info text-dark"
             };

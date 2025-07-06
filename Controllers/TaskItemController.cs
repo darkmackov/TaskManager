@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 using TaskManager.Database;
 using TaskManager.Entities;
 using TaskManager.Entities.Enums;
 using TaskManager.Models.TaskItem;
+using TaskManager.Services;
 using TaskManager.Validators;
 
 namespace TaskManager.Controllers
@@ -12,7 +12,7 @@ namespace TaskManager.Controllers
     /// <summary>
     /// Controller responsible for handling CRUD operations for TaskItems.
     /// </summary>
-    public class TaskItemController : Controller
+    public class TaskItemController : ExtendedController
     {
         private readonly DatabaseContext _context;
         private readonly TaskItemViewModelValidator _validator;
@@ -26,12 +26,19 @@ namespace TaskManager.Controllers
         /// <summary>
         /// Displays a list of all TaskItems.
         /// </summary>
-        public IActionResult List()
+        public async Task<IActionResult> List(string? sort, string? state)
         {
-            var taskItems = _context.TaskItems.ToList();
+            var taskItems = _context.TaskItems.AsQueryable();
+
+            // Apply state and sort filters
+            taskItems = TaskItemFilterService.ApplyTaskStateFilter(taskItems, state, out var currentState);
+            taskItems = TaskItemFilterService.ApplySort(taskItems, sort, out var currentSort);
+
+            ViewBag.CurrentSort = currentSort;
+            ViewBag.CurrentState = currentState;
 
             // Map TaskItem entities to TaskItemViewModel
-            var taskItemViewModels = taskItems.Select(task => new TaskItemViewModel
+            var taskItemViewModels = await taskItems.Select(task => new TaskItemViewModel
             {
                 Id = task.Id,
                 Title = task.Title,
@@ -39,7 +46,7 @@ namespace TaskManager.Controllers
                 State = task.State,
                 CreatedAt = task.CreatedAt,
                 DueDate = task.DueDate,
-            }).ToList();
+            }).ToListAsync();
 
             return View(taskItemViewModels);
         }
@@ -47,13 +54,12 @@ namespace TaskManager.Controllers
         /// <summary>
         /// Shows details for a specific TaskItem.
         /// </summary>
-        public IActionResult Detail(int id)
+        public async Task<IActionResult> Detail(int id)
         {
-            var taskItem = _context.TaskItems.Find(id);
+            var taskItem = await _context.TaskItems.FindAsync(id);
             if (taskItem == null)
             {
-                TempData["Message"] = "Úkol nebyl nalezen.";
-                TempData["MessageType"] = "danger";
+                SetMessage("Úkol nebyl nalezen.", MessageType.Danger);
                 return RedirectToAction("List", "TaskItem");
             }
 
@@ -65,7 +71,7 @@ namespace TaskManager.Controllers
                 State = taskItem.State,
                 CreatedAt = taskItem.CreatedAt,
                 DueDate = taskItem.DueDate,
-                StateOptions = GetStateOptions()
+                StateOptions = EnumExtension.ToSelectListItems<TaskState>()
             };
 
             return View(viewModel);
@@ -79,7 +85,7 @@ namespace TaskManager.Controllers
             var viewModel = new TaskItemViewModel()
             {
                 // Initialize the StateOptions with all TaskState enum values using reflection to get display names
-                StateOptions = GetStateOptions()
+                StateOptions = EnumExtension.ToSelectListItems<TaskState>()
             };
 
             return View(viewModel);
@@ -89,47 +95,41 @@ namespace TaskManager.Controllers
         /// Handles the POST request to create a new TaskItem.
         /// </summary>
         [HttpPost]
-        public IActionResult Create(TaskItemViewModel viewModel)
+        public async Task<IActionResult> Create(TaskItemViewModel viewModel)
         {
-            // Validate the model using the validator service
-            var validationResults = _validator.Validate(viewModel);
-            AddValidationResults(validationResults);
-
-            if (!ModelState.IsValid)
+            if (!ValidateViewModel(viewModel))
             {
                 // Reinitialize the StateOptions for the view model
-                viewModel.StateOptions = GetStateOptions();
+                viewModel.StateOptions = EnumExtension.ToSelectListItems<TaskState>();
 
                 return View(viewModel);
             }
 
             var taskItem = new TaskItem
             {
-                Title = viewModel.Title,
-                Description = viewModel.Description,
+                Title = viewModel.Title?.Trim()!,
+                Description = viewModel.Description?.Trim()!,
                 State = viewModel.State,
                 CreatedAt = DateTime.Now,
                 DueDate = viewModel.DueDate
             };
 
             _context.TaskItems.Add(taskItem);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            TempData["Message"] = "Úkol byl vytvořen.";
-            TempData["MessageType"] = "success";
+            SetMessage("Úkol byl vytvořen.");
             return RedirectToAction("Detail", "TaskItem", new { Id = taskItem.Id });
         }
 
         /// <summary>
         /// Displays the form to update an existing TaskItem.
         /// </summary>
-        public IActionResult Update(int id)
+        public async Task<IActionResult> Update(int id)
         {
-            var taskItem = _context.TaskItems.Find(id);
+            var taskItem = await _context.TaskItems.FindAsync(id);
             if (taskItem == null)
             {
-                TempData["Message"] = "Úkol nebyl nalezen.";
-                TempData["MessageType"] = "danger";
+                SetMessage("Úkol nebyl nalezen.", MessageType.Danger);
                 return RedirectToAction("List", "TaskItem");
             }
 
@@ -141,7 +141,7 @@ namespace TaskManager.Controllers
                 State = taskItem.State,
                 CreatedAt = taskItem.CreatedAt,
                 DueDate = taskItem.DueDate,
-                StateOptions = GetStateOptions()
+                StateOptions = EnumExtension.ToSelectListItems<TaskState>()
             };
 
             return View(viewModel);
@@ -151,88 +151,65 @@ namespace TaskManager.Controllers
         /// Handles the POST request to update an existing TaskItem.
         /// </summary>
         [HttpPost]
-        public IActionResult Update(TaskItemViewModel viewModel)
+        public async Task<IActionResult> Update(TaskItemViewModel viewModel)
         {
-            // Validate the model using the validator service
-            var validationResults = _validator.Validate(viewModel);
-            AddValidationResults(validationResults);
-
-            if (!ModelState.IsValid)
+            if (!ValidateViewModel(viewModel))
             {
                 // Reinitialize the StateOptions for the view model
-                viewModel.StateOptions = GetStateOptions();
+                viewModel.StateOptions = EnumExtension.ToSelectListItems<TaskState>();
 
                 return View(viewModel);
             }
 
-            var taskItem = _context.TaskItems.Find(viewModel.Id);
+            var taskItem = await _context.TaskItems.FindAsync(viewModel.Id);
             if (taskItem == null)
             {
-                TempData["Message"] = "Úkol nebyl nalezen.";
-                TempData["MessageType"] = "danger";
+                SetMessage("Úkol nebyl nalezen.", MessageType.Danger);
                 return RedirectToAction("List", "TaskItem");
             }
 
-            taskItem.Title = viewModel.Title;
-            taskItem.Description = viewModel.Description;
+            taskItem.Title = viewModel.Title?.Trim()!;
+            taskItem.Description = viewModel.Description?.Trim()!;
             taskItem.State = viewModel.State;
             taskItem.DueDate = viewModel.DueDate;
 
             _context.TaskItems.Update(taskItem);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            TempData["Message"] = "Úkol byl upraven.";
-            TempData["MessageType"] = "success";
+            SetMessage("Úkol byl upraven.");
             return RedirectToAction("Detail", "TaskItem", new { Id = taskItem.Id});
         }
 
         /// <summary>
         /// Deletes a TaskItem by its ID.
         /// </summary>
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var taskItem = _context.TaskItems.Find(id);
+            var taskItem = await _context.TaskItems.FindAsync(id);
             if (taskItem == null)
             {
-                TempData["Message"] = "Úkol nebyl nalezen.";
-                TempData["MessageType"] = "danger";
+                SetMessage("Úkol nebyl nalezen.", MessageType.Danger);
                 return RedirectToAction("List", "TaskItem");
             }
 
             _context.TaskItems.Remove(taskItem);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            TempData["Message"] = "Úkol byl smazán.";
-            TempData["MessageType"] = "success";
+            SetMessage("Úkol byl smazán.");
             return RedirectToAction("List", "TaskItem");
         }
 
         /// <summary>
-        /// Helper method to get the state options for the dropdown list.
+        /// Validates the model using the validator service
         /// </summary>
-        private static List<SelectListItem> GetStateOptions()
+        private bool ValidateViewModel(TaskItemViewModel viewModel)
         {
-            return Enum.GetValues(typeof(TaskState))
-                .Cast<TaskState>()
-                .Select(state => new SelectListItem
-                {
-                    Value = ((int)state).ToString(),
-                    Text = state.GetDisplayName()
-                }).ToList();
-        }
+            var validationResults = _validator.Validate(viewModel);
+            // Add validation results to ModelState
+            AddValidationResults(validationResults);
 
-        /// <summary>
-        /// Helper method to add validation results to the ModelState.
-        /// </summary>
-        private void AddValidationResults(IEnumerable<ValidationResult> results)
-        {
-            foreach (var result in results)
-            {
-                foreach (var member in result.MemberNames)
-                {
-                    ModelState.AddModelError(member, result.ErrorMessage!);
-                }
-            }
+            // Check if ModelState is valid
+            return ModelState.IsValid;
         }
     }
 }

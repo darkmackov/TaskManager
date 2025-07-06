@@ -9,8 +9,8 @@ namespace TaskManager.Database.Migrations
         {
             Create.Table("TaskItems")
                 .WithColumn("Id").AsInt32().PrimaryKey().Identity()
-                .WithColumn("Title").AsString().NotNullable()
-                .WithColumn("Description").AsString().NotNullable()
+                .WithColumn("Title").AsString(128).NotNullable()
+                .WithColumn("Description").AsString(4096).NotNullable()
                 .WithColumn("State").AsInt16().NotNullable().WithDefaultValue(0)
                 .WithColumn("CreatedAt").AsDateTime().NotNullable().WithDefault(SystemMethods.CurrentDateTime)
                 .WithColumn("DueDate").AsDateTime().Nullable();

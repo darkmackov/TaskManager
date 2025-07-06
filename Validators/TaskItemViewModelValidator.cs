@@ -10,8 +10,8 @@ namespace TaskManager.Validators
         {
             var results = new[]
             {
-                () => ValidateTitle(model.Title),
-                () => ValidateDescription(model.Description),
+                () => ValidateTitle(model.Title!),
+                () => ValidateDescription(model.Description!),
                 () => ValidateState(model.State),
                 () => ValidateDueDate(model.DueDate)
             };
@@ -25,6 +25,7 @@ namespace TaskManager.Validators
 
         private static ValidationResult? ValidateTitle(string title)
         {
+            title = title?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(title))
             {
                 // Title is required
@@ -41,15 +42,16 @@ namespace TaskManager.Validators
 
         private static ValidationResult? ValidateDescription(string description)
         {
+            description = description?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(description))
             {
                 // Description is required
                 return new ValidationResult("Popis je povinný.", [nameof(TaskItemViewModel.Description)]);
             }
-            else if (description.Length > 2048)
+            else if (description.Length > 4096)
             {
                 // Description length limit
-                return new ValidationResult("Popis může mít maximálně 2048 znaků.", [nameof(TaskItemViewModel.Description)]);
+                return new ValidationResult("Popis může mít maximálně 4096 znaků.", [nameof(TaskItemViewModel.Description)]);
             }
 
             return null;
@@ -75,11 +77,7 @@ namespace TaskManager.Validators
 
             // Check if dueDate is in the past or more than 3 years in the future
             if (dueDate.Value < now || dueDate.Value > max)
-            {
-                return new ValidationResult(
-                    $"Termín dokončení musí být mezi {now:d} a {max:d}.",
-                    [nameof(TaskItemViewModel.DueDate)]);
-            }
+                return new ValidationResult($"Termín dokončení musí být mezi {now:d} a {max:d}.",[nameof(TaskItemViewModel.DueDate)]);
 
             return null;
         }
